@@ -152,7 +152,7 @@ def unload(fingerprint):  # Unload a fingerprint.
 
 def output(x):  # Output something :P
     global outputstring, outputindex, columns
-    if outputindex != 79:
+    if outputindex != (columns - 1):
         outputindex += 1
     else:
         outputindex = 0
