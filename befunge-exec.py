@@ -1,3 +1,12 @@
+#This is a modified version of the code from this source:
+#https://github.com/TieSoul/befunge
+#It is under the GNU GPL, and any modifications must therefore also be under the GPL.
+
+
+
+
+
+
 from random import choice  # Used for ? instruction
 from time import sleep  # Used for Visual mode
 import getopt  # Used in another version of this code
@@ -5,6 +14,7 @@ import sys  # Same
 import os
 import datetime
 import string
+import pyperclip
 digs = string.digits + string.ascii_lowercase
 
 
@@ -25,6 +35,9 @@ def int2base(x, base):
 f = ''
 x = None
 y = None
+outputindex = 0
+columns = 80
+opcount = 0
 storeoffset = [0, 0]  # Not used for now, good to have if I'm ever adding Concurrent Funge
 stackstack = [[]]     # Stack stack needed instead of singular stack for Funge-98 compatibility
 stringmode = False    # String mode is used to make the IP not execute commands while in a string.
@@ -32,7 +45,7 @@ skipcounter = 0       # This is used for the 'j' instruction
 repeatcounter = 0     # Used for the 'k' instruction
 tempdelta = [0, 1]    # Used for wrapping
 delta = [0, 1]        # Direction the IP is traveling in
-outputstring = ''     # Used for Debug mode.
+outputstring = ''     # Used for Debug mode, and clipboard copying.
 inComment = False     # For ';', the comment instruction.
 origin = [0, 0]
 class BASE:           # BASE fingerprint, converts between number bases.
@@ -90,11 +103,11 @@ class ROMA:          # ROMA fingerprint does Latin numbers. Should be obvious wh
         push(500)
 
     def M(self):
-        push(1000)
+        push(1000)        
 BASE = BASE()
 MODU = MODU()
 ROMA = ROMA()
-fingerDict = {0x42415345: {'B': BASE.B,               # Dictionary of fingerprint functions.
+fingerDict = {0x42415345: {'B': BASE.B,              # Dictionary of fingerprint functions.
                            'H': BASE.H,
                            'I': BASE.I,
                            'N': BASE.N,
@@ -138,7 +151,12 @@ def unload(fingerprint):  # Unload a fingerprint.
 
 
 def output(x):  # Output something :P
-    global outputstring
+    global outputstring, outputindex, columns
+    if outputindex != 79:
+        outputindex += 1
+    else:
+        outputindex = 0
+        x += "\n"
     print(x, end="")
     outputstring += str(x)
 
@@ -196,7 +214,7 @@ def move(x, y):  # Moving and wrapping. The wrapping algorithm is called Lahey-S
     global m, delta
     if x + delta[1] not in range(0, len(m[y])) or y + delta[0] not in range(0, len(m)):
         delta = [-x for x in delta]
-        while x + delta[1] in range(0, len(m[y])) and y + delta[0] in range(0, len(m[y])):
+        while x + delta[1] in range(0, len(m[y])) and y + delta[0] in range(0, len(m)):
             x += delta[1]
             y += delta[0]
         delta = [-x for x in delta]
@@ -207,7 +225,8 @@ def move(x, y):  # Moving and wrapping. The wrapping algorithm is called Lahey-S
 
 
 def exec(char):  # Execute an instruction.
-    global stringmode, delta, tempdelta, repeatcounter, skipcounter, storeoffset, m, outputstring, y, x, inComment, origin
+    global stringmode, delta, tempdelta, repeatcounter, skipcounter, storeoffset, m, outputstring, y, x, inComment, origin, opcount
+    opcount += 1
     if char == ' ':  # Skips all spaces, so that spaces don't take up a tick.
         if stringmode:  # Yes, even in string mode. This makes it impossible to have multiple consecutive spaces
             push(32)    # in a string.
@@ -444,8 +463,62 @@ def exec(char):  # Execute an instruction.
             else:
                 delta = [-i for i in delta]
         elif char == '@':  # Ends the program.
+            m[y][x], temp = ord('.') if delta == [0, 0] else ord('\\') if delta[1] == -delta[0] else ord('|') if abs(delta[1]) > abs(delta[0]) else ord("-") if abs(delta[1]) < abs(delta[0]) else ord('/'), m[y][x]
+            print("\n" * 10)
+            print("Stack: ", end="")
+            for i in stackstack[-1]:
+                try:
+                    print("%s (%s) | " % (str(i), chr(i)), end="")
+                except:
+                    print("%s | " % (str(i)), end="")
+            print('\n')
+            print("Script: \n%s" % str(''.join([''.join([(chr(i) if i <= 128 else ' ') for i in k] + ['\n']) for k in m])))
+                # Uses some list comprehension to print the program.
+            print("Output:\n" + outputstring)
+            print("\nSOSS: ", end="")
+            if len(stackstack) > 1:
+                for i in stackstack[-2]:
+                        print("%s (%s) | " % (str(i),chr(i)),end="")
+            else:
+                print("None")
+            print("\nY: %i" % y)
+            print("X: %i" % x)
+            print("String Mode: " + str(stringmode))
+            print("Character Executed: %s" % chr(temp))
+            print("Loop counter (k): %i" % repeatcounter)
+            print("Skip counter (j): %i" % skipcounter)
+            print("Opcode Counter: %s" % opcount)
+            print("Delta (y,x): " + str(delta))
+            input()
             sys.exit(0)
         elif char == 'q':  # Exits with a popped return code.
+            m[y][x], temp = ord('.') if delta == [0, 0] else ord('\\') if delta[1] == -delta[0] else ord('|') if abs(delta[1]) > abs(delta[0]) else ord("-") if abs(delta[1]) < abs(delta[0]) else ord('/'), m[y][x]
+            print("\n" * 10)
+            print("Stack: ", end="")
+            for i in stackstack[-1]:
+                try:
+                    print("%s (%s) | " % (str(i), chr(i)), end="")
+                except:
+                    print("%s | " % (str(i)), end="")
+            print('\n')
+            print("Script: \n%s" % str(''.join([''.join([(chr(i) if i <= 128 else ' ') for i in k] + ['\n']) for k in m])))
+                # Uses some list comprehension to print the program.
+            print("Output:\n" + outputstring)
+            print("\nSOSS: ", end="")
+            if len(stackstack) > 1:
+                for i in stackstack[-2]:
+                        print("%s (%s) | " % (str(i),chr(i)),end="")
+            else:
+                print("None")
+            print("\nY: %i" % y)
+            print("X: %i" % x)
+            print("String Mode: " + str(stringmode))
+            print("Character Executed: %s" % chr(temp))
+            print("Loop counter (k): %i" % repeatcounter)
+            print("Skip counter (j): %i" % skipcounter)
+            print("Opcode Counter: %s" % opcount)
+            print("Delta (y,x): " + str(delta))
+            input()
             sys.exit(pop())
         elif char == 'z':  # 'z' is an explicit no-op.
             True
@@ -489,6 +562,7 @@ def exec(char):  # Execute an instruction.
             stringmode = False
     else:
         if char == ';':
+            opcount += 1
             inComment = False
 
 
@@ -501,7 +575,7 @@ def push(x):          # Put in a seperate function for brevity.
 
 
 def execute(file):
-    global y, x, delta, stackstack, outputstring, m, skipcounter
+    global y, x, delta, stackstack, outputstring, m, skipcounter, waittime
     m = open(file).read().split('\n')
     m = [[ord(j) for j in i] for i in m]
     for i in range(len(m)):
@@ -509,22 +583,19 @@ def execute(file):
     x = 0
     y = 0
     while True:
-        if skipcounter != 0:  # Skipping multiple positions (for the 'j' instruction. 'k' and '#' use it too)
-            if skipcounter > 0:
-                while skipcounter > 0:
-                    x, y = move(x, y)
-                    skipcounter -= 1
-            else:
-                while skipcounter < 0:
-                    delta = [-x for x in delta]
-                    x, y = move(x, y)
-                    delta = [-x for x in delta]
-                    skipcounter += 1
+        if skipcounter != 0:
+            while skipcounter > 0:
+                x, y = move(x, y)
+                skipcounter -= 1
+        else:
+            while skipcounter < 0:
+                delta = [-x for x in delta]
+                x, y = move(x, y)
+                delta = [-x for x in delta]
+                skipcounter += 1
         exec(chr(m[y][x]))
         if visual:
             m[y][x], temp = ord('.') if delta == [0, 0] else ord('\\') if delta[1] == -delta[0] else ord('|') if abs(delta[1]) > abs(delta[0]) else ord("-") if abs(delta[1]) < abs(delta[0]) else ord('/'), m[y][x]
-                # The previous (way too long) line sets the IP's location to a character indicating its direction,
-                # then sets a temporary value to restore the original character in that location.
             print("\n" * 10)
             print("Stack: ", end="")
             for i in stackstack[-1]:
@@ -535,37 +606,34 @@ def execute(file):
             print('\n')
             print("Script: \n%s" % str(''.join([''.join([(chr(i) if i <= 128 else ' ') for i in k] + ['\n']) for k in m])))
                 # Uses some list comprehension to print the program.
-            print("Output: " + outputstring)
+            print("Output:\n" + outputstring)
+            print("\nSOSS: ", end="")
+            if len(stackstack) > 1:
+                for i in stackstack[-2]:
+                    print("%s (%s) | " % (str(i),chr(i)),end="")
+            else:
+                print("None")
+            print("\nY: %i" % y)
+            print("X: %i" % x)
+            print("String Mode: " + str(stringmode))
+            print("Character Executed: %s" % chr(temp))
+            print("Loop counter (k): %i" % repeatcounter)
+            print("Skip counter (j): %i" % skipcounter)
+            print("Opcode Counter: %s" % opcount)
+            print("Delta (y,x): " + str(delta))
             if debug:
-                print("SOSS: ", end="")
-                if len(stackstack) > 1:
-                    for i in stackstack[-2]:
-                        print("%s (%s) | " % (str(i),chr(i)),end="")
-                else:
-                    print("None")
-                print("\nY: %i" % y)
-                print("X: %i" % x)
-                print("String Mode: " + str(stringmode))
-                print("Character Executed: %s" % chr(temp))
-                print("Loop counter (k): %i" % repeatcounter)
-                print("Skip counter (j): %i" % skipcounter)
-                print("Delta (y,x): " + str(delta))
                 input()
             else:
-                sleep(.5)
+                sleep(waittime)
             m[y][x] = temp
-        if slow:
-            if visual:
-                sleep(.5)
 
         x, y = move(x, y)
-
 
 if __name__ == '__main__':
     visual = False
     debug = False
-    slow = False
     good = False
+    waittime = .5
     while not good:
         try:
             f = input("Enter befunge filename (include file extension)\n")
@@ -607,15 +675,13 @@ if __name__ == '__main__':
     if visual and (not debug):
         while not good:
             try:
-                slow = input("Slow execution? Y/N\n")
-                if slow.lower() in ['yes', 'y']:
-                    slow = True
+                w = float(input("Time between execution? (0.05 seconds min)\n"))
+                if w >= 0.1:
+                    waittime = w
+                    good = True
                 else:
-                    if slow.lower() in ['no', 'n']:
-                        slow = False
-                    else:
-                        raise TypeError
-                good = True
+                    raise ValueError
             except:
-                print("Please enter 'y', 'n', 'yes', or 'no'.")
+                print('Please enter a number greater than 0.05')
     execute(f)
+    time.sleep(40)
