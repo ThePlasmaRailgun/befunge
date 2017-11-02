@@ -152,11 +152,14 @@ def unload(fingerprint):  # Unload a fingerprint.
 
 def output(x):  # Output something :P
     global outputstring, outputindex, columns
-    if outputindex != (columns - 1):
-        outputindex += 1
-    else:
+    if x == "\n":
         outputindex = 0
-        x += "\n"
+    else: 
+        if outputindex < (columns - 1):
+            outputindex += 1
+        else:
+            outputindex = 0
+            x += "\n"
     print(x, end="")
     outputstring += str(x)
 
