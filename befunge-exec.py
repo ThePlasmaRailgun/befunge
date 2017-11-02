@@ -35,9 +35,9 @@ def int2base(x, base):
 f = ''
 x = None
 y = None
-outputindex = 0
-columns = 80
-opcount = 0
+outputindex = 0       # Used for output wrapping
+columns = 80          # Sets a maximum number of characters so that the output wraps. Set to 0 to disable
+opcount = 0           # Counts the number of instructions that have been executed. Ignores spaces and comments
 storeoffset = [0, 0]  # Not used for now, good to have if I'm ever adding Concurrent Funge
 stackstack = [[]]     # Stack stack needed instead of singular stack for Funge-98 compatibility
 stringmode = False    # String mode is used to make the IP not execute commands while in a string.
@@ -45,7 +45,7 @@ skipcounter = 0       # This is used for the 'j' instruction
 repeatcounter = 0     # Used for the 'k' instruction
 tempdelta = [0, 1]    # Used for wrapping
 delta = [0, 1]        # Direction the IP is traveling in
-outputstring = ''     # Used for Debug mode, and clipboard copying.
+outputstring = ''     # Used for Debug mode
 inComment = False     # For ';', the comment instruction.
 origin = [0, 0]
 class BASE:           # BASE fingerprint, converts between number bases.
@@ -152,14 +152,15 @@ def unload(fingerprint):  # Unload a fingerprint.
 
 def output(x):  # Output something :P
     global outputstring, outputindex, columns
-    if x == "\n":
-        outputindex = 0
-    else: 
-        if outputindex < (columns - 1):
-            outputindex += 1
-        else:
+    if columns > 0:
+        if x == "\n":
             outputindex = 0
-            x += "\n"
+        else: 
+            if outputindex < (columns - 1):
+                outputindex += 1
+            else:
+                outputindex = 0
+                x += "\n"
     print(x, end="")
     outputstring += str(x)
 
